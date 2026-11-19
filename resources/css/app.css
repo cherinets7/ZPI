@@ -1,0 +1,82 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+:root {
+    --zpi-green: #0f3d32;
+    --zpi-green-2: #1a5c4a;
+    --zpi-gold: #c6a15b;
+    --zpi-ink: #1c2421;
+    --zpi-paper: #f3f6f4;
+}
+
+body {
+    font-family: "Noto Sans Ethiopic", "Noto Sans", sans-serif;
+    background: var(--zpi-paper);
+    color: var(--zpi-ink);
+}
+
+a {
+    text-decoration: none;
+}
+
+.app-sidebar {
+    background: linear-gradient(180deg, var(--zpi-green) 0%, #0b2e26 100%);
+    color: #fff;
+    min-height: 100vh;
+}
+
+.app-sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.88);
+    border-radius: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.15rem;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-link.active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.app-sidebar .brand-mark {
+    color: var(--zpi-gold);
+    letter-spacing: 0.08em;
+    font-weight: 700;
+}
+
+.topbar {
+    background: #fff;
+    border-bottom: 1px solid #e4ebe7;
+}
+
+.stat-card {
+    border: 0;
+    border-left: 4px solid var(--zpi-gold);
+    box-shadow: 0 1px 2px rgba(15, 61, 50, 0.06);
+}
+
+.table thead th {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #5c6b66;
+}
+
+.btn-zpi {
+    background: var(--zpi-green);
+    border-color: var(--zpi-green);
+    color: #fff;
+}
+
+.btn-zpi:hover {
+    background: var(--zpi-green-2);
+    color: #fff;
+}
+
+.auth-card {
+    max-width: 440px;
+}
+
+.qr-box img {
+    width: 120px;
+    height: 120px;
+}
