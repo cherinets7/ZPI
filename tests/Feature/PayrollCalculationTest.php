@@ -89,6 +89,87 @@ class PayrollCalculationTest extends TestCase
         $this->get(route('documents.verify', $paid->verification_hash))->assertOk()->assertSee('authentic', false);
     }
 
+    public function test_recurring_holiday_is_excluded_from_a_later_year(): void
+    {
+        $year = 2016;
+        $month = 4;
+        $bounds = EthiopianDateHelper::calendarMonthBounds($year, $month);
+        $working = [];
+        $cursor = $bounds['start']->copy();
+        while ($cursor->lte($bounds['end'])) {
+            if (EthiopianDateHelper::isWorkingDay($cursor)) {
+                $working[] = $cursor->copy();
+            }
+            $cursor->addDay();
+        }
+
+        $recurringDay = $working[0];
+        $plainDay = $working[1];
+        $recurringEth = EthiopianDateHelper::fromCarbon($recurringDay);
+        $plainEth = EthiopianDateHelper::fromCarbon($plainDay);
+
+        Holiday::query()->create([
+            'name' => 'Recurring fixture',
+            'gregorian_date' => EthiopianDateHelper::toCarbon($recurringEth['year'] - 1, $recurringEth['month'], $recurringEth['day'])->toDateString(),
+            'eth_year' => $recurringEth['year'] - 1,
+            'eth_month' => $recurringEth['month'],
+            'eth_day' => $recurringEth['day'],
+            'is_recurring' => true,
+        ]);
+        Holiday::query()->create([
+            'name' => 'One-off fixture',
+            'gregorian_date' => EthiopianDateHelper::toCarbon($plainEth['year'] - 1, $plainEth['month'], $plainEth['day'])->toDateString(),
+            'eth_year' => $plainEth['year'] - 1,
+            'eth_month' => $plainEth['month'],
+            'eth_day' => $plainEth['day'],
+            'is_recurring' => false,
+        ]);
+
+        $department = Department::query()->create(['name' => 'Health', 'code' => 'HLDY', 'is_active' => true]);
+        $employee = User::factory()->create(['role' => 'employee', 'department_id' => $department->id]);
+        foreach ($working as $day) {
+            if (in_array($day->toDateString(), [$recurringDay->toDateString(), $plainDay->toDateString()], true)) {
+                continue;
+            }
+            $eth = EthiopianDateHelper::fromCarbon($day);
+            HrDailyLog::query()->create([
+                'user_id' => $employee->id,
+                'department_id' => $department->id,
+                'work_date' => $day->toDateString(),
+                'eth_year' => $eth['year'],
+                'eth_month' => $eth['month'],
+                'eth_day' => $eth['day'],
+                'status' => 'present',
+                'hours' => 8,
+                'recorded_by' => $employee->id,
+            ]);
+        }
+
+        $service = app(AttendanceService::class);
+        $recurringClass = $service->classifyDay($employee, $recurringDay);
+        $this->assertSame('holiday', $recurringClass['status']);
+        $this->assertSame(0, $recurringClass['absent']);
+        $this->assertEquals(0.0, $recurringClass['expected']);
+
+        $plainClass = $service->classifyDay($employee, $plainDay);
+        $this->assertSame('absent', $plainClass['status']);
+        $this->assertSame(1, $plainClass['absent']);
+
+        $classifiedExpected = 0.0;
+        $classifiedAbsent = 0;
+        foreach ($working as $day) {
+            $classified = $service->classifyDay($employee, $day);
+            $classifiedExpected += $classified['expected'];
+            $classifiedAbsent += $classified['absent'];
+        }
+
+        $summary = $service->summarize($employee, $year, $month);
+        $this->assertSame(1, $classifiedAbsent);
+        $this->assertSame(1, $summary['holiday_days']);
+        $this->assertEqualsWithDelta($classifiedExpected, $summary['expected'], 0.01);
+        $this->assertGreaterThan(0, $summary['absent_days']);
+    }
+
     public function test_payroll_is_refused_when_weekly_attendance_is_not_approved(): void
     {
         $department = Department::query()->create(['name' => 'Education', 'code' => 'EDU1', 'is_active' => true]);

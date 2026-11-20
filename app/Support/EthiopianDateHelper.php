@@ -225,12 +225,19 @@ class EthiopianDateHelper
     }
 
     /**
+     * Monday–Sunday identity for a budget year.
+     *
+     * The span that contains Hamle 1 is week 1 of the budget year that opens
+     * that day. Every other day in that span resolves to the same week, so
+     * attendance summaries and payroll share one key.
+     *
      * @return array{budget_year: int, week: int, start: Carbon, end: Carbon}
      */
     public static function weekIdentity(CarbonInterface $date): array
     {
         $monday = self::mondayOf($date);
-        $budgetYear = self::budgetYearOf($date);
+        $end = $monday->copy()->addDays(6);
+        $budgetYear = self::budgetYearOfWeek($monday);
         $firstMonday = self::mondayOf(self::budgetYearStart($budgetYear));
         $days = (int) round(($monday->copy()->startOfDay()->timestamp - $firstMonday->copy()->startOfDay()->timestamp) / 86400);
         $week = intdiv($days, 7) + 1;
@@ -243,15 +250,34 @@ class EthiopianDateHelper
             'budget_year' => $budgetYear,
             'week' => $week,
             'start' => $monday,
-            'end' => $monday->copy()->addDays(6),
+            'end' => $end,
         ];
     }
 
     public static function weekCount(int $budgetYear): int
     {
-        $last = self::weekIdentity(self::budgetYearEnd($budgetYear));
+        $nextOpening = self::mondayOf(self::budgetYearStart($budgetYear + 1));
+        $lastDay = $nextOpening->copy()->subDay();
+        $yearEnd = self::budgetYearEnd($budgetYear);
+        if ($lastDay->gt($yearEnd)) {
+            $lastDay = $yearEnd->copy();
+        }
 
-        return $last['week'];
+        return self::weekIdentity($lastDay)['week'];
+    }
+
+    private static function budgetYearOfWeek(Carbon $monday): int
+    {
+        $cursor = $monday->copy();
+        for ($day = 0; $day < 7; $day++) {
+            $eth = self::fromCarbon($cursor);
+            if ($eth['month'] === 11 && $eth['day'] === 1) {
+                return self::budgetYearOf($cursor);
+            }
+            $cursor->addDay();
+        }
+
+        return self::budgetYearOf($monday);
     }
 
     /**
