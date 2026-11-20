@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\PlanAndReport;
 use App\Support\EthiopianDateHelper;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class RollupService
@@ -14,25 +15,10 @@ class RollupService
             return;
         }
 
-        $weeklies = PlanAndReport::query()
-            ->where('user_id', $weekly->user_id)
-            ->where('department_id', $weekly->department_id)
-            ->where('kpi_indicator_id', $weekly->kpi_indicator_id)
-            ->where('type', 'report')
-            ->where('period_type', 'weekly')
-            ->where('is_rollup', false)
-            ->where('status', 'approved')
-            ->where('eth_year', $weekly->eth_year)
-            ->get();
-
-        $budgetYear = (int) $weekly->eth_year;
-        $anchor = $this->thursdayOf($weekly);
-        $eth = EthiopianDateHelper::fromCarbon($anchor);
-        [$anchorYear, $monthIndex] = EthiopianDateHelper::budgetPosition($eth['year'], $eth['month']);
-
-        if ($anchorYear !== $budgetYear) {
-            $budgetYear = $anchorYear;
-        }
+        $budgetYear = $this->thursdayBudgetYear($weekly);
+        $weeklies = $this->weekliesForBudgetYear($weekly, $budgetYear);
+        $eth = EthiopianDateHelper::fromCarbon($this->thursdayOf($weekly));
+        [, $monthIndex] = EthiopianDateHelper::budgetPosition($eth['year'], $eth['month']);
 
         $quarter = match (true) {
             $monthIndex <= 3 => 1,
@@ -71,8 +57,51 @@ class RollupService
         });
 
         $this->upsert($weekly, $weeklies, 'annual', $budgetYear, 1, function (PlanAndReport $row) use ($budgetYear) {
-            return (int) $row->eth_year === $budgetYear;
+            return $this->thursdayBudgetYear($row) === $budgetYear;
         });
+    }
+
+    /**
+     * Approved weeklies whose Thursday falls in the budget year, including a
+     * boundary week stored under the neighbouring eth_year.
+     *
+     * @return Collection<int, PlanAndReport>
+     */
+    private function weekliesForBudgetYear(PlanAndReport $source, int $budgetYear): Collection
+    {
+        $start = EthiopianDateHelper::budgetYearStart($budgetYear)->toDateString();
+        $end = EthiopianDateHelper::budgetYearEnd($budgetYear)->toDateString();
+
+        return PlanAndReport::query()
+            ->where('user_id', $source->user_id)
+            ->where('department_id', $source->department_id)
+            ->where('kpi_indicator_id', $source->kpi_indicator_id)
+            ->where('type', 'report')
+            ->where('period_type', 'weekly')
+            ->where('is_rollup', false)
+            ->where('status', 'approved')
+            ->where(function ($query) use ($source, $budgetYear, $start, $end) {
+                $query->where('id', $source->id)
+                    ->orWhere(function ($query) use ($budgetYear, $start, $end) {
+                        $query->whereBetween('eth_year', [$budgetYear - 1, $budgetYear + 1])
+                            ->where(function ($query) use ($budgetYear, $start, $end) {
+                                $query->where('eth_year', $budgetYear)
+                                    ->orWhereBetween('period_start', [$start, $end])
+                                    ->orWhereBetween('period_end', [$start, $end]);
+                            });
+                    });
+            })
+            ->get()
+            ->filter(fn (PlanAndReport $row) => $this->thursdayBudgetYear($row) === $budgetYear)
+            ->values();
+    }
+
+    private function thursdayBudgetYear(PlanAndReport $weekly): int
+    {
+        $eth = EthiopianDateHelper::fromCarbon($this->thursdayOf($weekly));
+        [$year] = EthiopianDateHelper::budgetPosition($eth['year'], $eth['month']);
+
+        return $year;
     }
 
     /**
@@ -116,7 +145,7 @@ class RollupService
         );
     }
 
-    private function thursdayOf(PlanAndReport $weekly): \Illuminate\Support\Carbon
+    private function thursdayOf(PlanAndReport $weekly): Carbon
     {
         if ($weekly->period_start) {
             return EthiopianDateHelper::mondayOf($weekly->period_start)->addDays(3);

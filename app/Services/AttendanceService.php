@@ -77,13 +77,7 @@ class AttendanceService
         $leaveDays = 0;
         $holidayDays = 0;
 
-        $holidaySet = array_flip(
-            Holiday::query()
-                ->whereBetween('gregorian_date', [$bounds['start']->toDateString(), $bounds['end']->toDateString()])
-                ->pluck('gregorian_date')
-                ->map(fn ($date) => Carbon::parse($date)->toDateString())
-                ->all()
-        );
+        $holidaySet = $this->holidayDates($bounds['start'], $bounds['end']);
 
         $leaves = LeaveRequest::query()
             ->where('user_id', $employee->id)
@@ -209,8 +203,7 @@ class AttendanceService
             return $empty;
         }
 
-        $isHoliday = Holiday::query()->whereDate('gregorian_date', $date->toDateString())->exists();
-        if ($isHoliday) {
+        if ($this->isHoliday($date)) {
             return ['expected' => 0.0, 'worked' => 0.0, 'absent' => 0, 'leave' => 0, 'holiday' => 1, 'status' => 'holiday'];
         }
 
@@ -246,5 +239,56 @@ class AttendanceService
         }
 
         return ['expected' => $hoursPerDay, 'worked' => 0.0, 'absent' => 1, 'leave' => 0, 'holiday' => 0, 'status' => 'absent'];
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function holidayDates(Carbon $start, Carbon $end): array
+    {
+        $dates = Holiday::query()
+            ->whereBetween('gregorian_date', [$start->toDateString(), $end->toDateString()])
+            ->pluck('gregorian_date')
+            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+            ->all();
+
+        $set = [];
+        foreach ($dates as $date) {
+            $set[$date] = true;
+        }
+
+        $recurring = Holiday::query()->where('is_recurring', true)->get(['eth_month', 'eth_day']);
+        if ($recurring->isEmpty()) {
+            return $set;
+        }
+
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $eth = EthiopianDateHelper::fromCarbon($cursor);
+            foreach ($recurring as $holiday) {
+                if ((int) $holiday->eth_month === $eth['month'] && (int) $holiday->eth_day === $eth['day']) {
+                    $set[$cursor->toDateString()] = true;
+                    break;
+                }
+            }
+            $cursor->addDay();
+        }
+
+        return $set;
+    }
+
+    private function isHoliday(Carbon $date): bool
+    {
+        if (Holiday::query()->whereDate('gregorian_date', $date->toDateString())->exists()) {
+            return true;
+        }
+
+        $eth = EthiopianDateHelper::fromCarbon($date);
+
+        return Holiday::query()
+            ->where('is_recurring', true)
+            ->where('eth_month', $eth['month'])
+            ->where('eth_day', $eth['day'])
+            ->exists();
     }
 }
