@@ -7,7 +7,9 @@ use App\Models\Department;
 use App\Models\KpiIndicator;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Exceptions\NoTypeDetectedException;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Reader\Exception as SpreadsheetReaderException;
 
 class KpiIndicatorController extends Controller
 {
@@ -80,9 +82,27 @@ class KpiIndicatorController extends Controller
     {
         $this->authorize('create', KpiIndicator::class);
         $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv']]);
-        Excel::import(new KpiIndicatorsImport, $request->file('file'));
+        $import = new KpiIndicatorsImport;
+        try {
+            Excel::import($import, $request->file('file'));
+        } catch (SpreadsheetReaderException|NoTypeDetectedException) {
+            return back()->withErrors(['file' => __('ui.import_unreadable')]);
+        }
 
-        return back()->with('status', __('ui.saved'));
+        return $this->importResponse($import);
+    }
+
+    private function importResponse(KpiIndicatorsImport $import)
+    {
+        if ($import->errors !== []) {
+            $response = back()->withErrors(['file' => $import->errors]);
+
+            return $import->imported > 0
+                ? $response->with('status', __('ui.import_partial', ['count' => $import->imported]))
+                : $response;
+        }
+
+        return back()->with('status', __('ui.import_done', ['count' => $import->imported]));
     }
 
     private function validated(Request $request): array

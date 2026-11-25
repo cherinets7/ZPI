@@ -16,6 +16,7 @@ use App\Support\EthiopianDateHelper;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class PlanReportController extends Controller
@@ -314,7 +315,7 @@ class PlanReportController extends Controller
         try {
             return EthiopianDateHelper::periodBounds($type, $year, $period);
         } catch (InvalidArgumentException $exception) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'eth_period' => $exception->getMessage(),
             ]);
         }
@@ -335,24 +336,29 @@ class PlanReportController extends Controller
     private function notifyReviewers(PlanAndReport $plan, string $key): void
     {
         $role = $plan->period_type === 'daily' ? 'dept_head' : 'dev_plan_specialist';
-        User::query()
+        $recipients = User::query()
             ->where('department_id', $plan->department_id)
             ->where('role', $role)
             ->where('status', 'active')
-            ->get()
-            ->each(fn (User $user) => $user->notify(new WorkflowNotification(
-                __('ui.'.$key),
-                $plan->title,
-                route('plans.show', $plan)
-            )));
+            ->get();
+
+        if ($plan->period_type === 'daily') {
+            $plan->loadMissing('department');
+            $recipients = $recipients->merge($plan->department?->leaders() ?? collect())->unique('id')->values();
+        }
+
+        $recipients->each(fn (User $user) => $user->notify(new WorkflowNotification(
+            __('ui.'.$key),
+            $plan->title,
+            route('plans.show', $plan)
+        )));
     }
 
     private function notifyHead(PlanAndReport $plan, string $title): void
     {
-        $headId = $plan->department?->head_id;
-        if (! $headId) {
-            return;
-        }
-        User::query()->find($headId)?->notify(new WorkflowNotification($title, $plan->title, route('plans.show', $plan)));
+        $plan->loadMissing('department');
+        $plan->department?->leaders()->each(fn (User $user) => $user->notify(
+            new WorkflowNotification($title, $plan->title, route('plans.show', $plan))
+        ));
     }
 }

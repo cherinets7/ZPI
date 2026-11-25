@@ -81,14 +81,12 @@ class LeaveRequestController extends Controller
     {
         $this->authorize('submit', $leave);
         $leave->update(['status' => 'submitted']);
-        $headId = $leave->department?->head_id;
-        if ($headId) {
-            User::query()->find($headId)?->notify(new WorkflowNotification(
-                __('ui.submitted'),
-                $leave->user?->name.' — '.__('ui.'.$leave->type),
-                route('leaves.show', $leave)
-            ));
-        }
+        $leave->loadMissing('department');
+        $leave->department?->leaders()->each(fn (User $user) => $user->notify(new WorkflowNotification(
+            __('ui.submitted'),
+            $leave->user?->name.' — '.__('ui.'.$leave->type),
+            route('leaves.show', $leave)
+        )));
         $this->audit->log('leave.submitted', $leave, [], ['status' => 'submitted'], $leave->department_id);
 
         return back()->with('status', __('ui.submitted'));

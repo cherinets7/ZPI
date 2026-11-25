@@ -6,7 +6,7 @@
 <p>{{ $leave->reason }}</p>
 @if($leave->review_note)<div class="alert alert-light border">{{ $leave->review_note }}</div>@endif
 <div class="d-flex gap-2 mb-3">
-    @can('update', $leave)<a class="btn btn-outline-secondary" href="{{ route('leaves.create') }}">{{ __('ui.edit') }}</a>@endcan
+    @can('update', $leave)<a class="btn btn-outline-secondary" href="#leave-edit">{{ __('ui.edit') }}</a>@endcan
     @can('delete', $leave)
         <form method="POST" action="{{ route('leaves.destroy', $leave) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.delete') }}</button></form>
     @endcan
@@ -15,7 +15,7 @@
     @endcan
 </div>
 @can('update', $leave)
-    <form method="POST" action="{{ route('leaves.update', $leave) }}" class="card card-body mb-3">
+    <form id="leave-edit" method="POST" action="{{ route('leaves.update', $leave) }}" class="card card-body mb-3">
         @csrf @method('PUT')
         <input type="hidden" name="type" value="{{ $leave->type }}">
         <div class="row">

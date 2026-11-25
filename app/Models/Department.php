@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Department extends Model
 {
@@ -55,5 +56,20 @@ class Department extends Model
         return $this->acting_head_id
             && $this->acting_until
             && $this->acting_until->toDateString() >= now()->toDateString();
+    }
+
+    /**
+     * The permanent head and a current acting head, without duplicates.
+     *
+     * @return Collection<int, User>
+     */
+    public function leaders(): Collection
+    {
+        $this->loadMissing(['head', 'actingHead']);
+
+        return collect([
+            $this->head,
+            $this->hasValidActingHead() ? $this->actingHead : null,
+        ])->filter(fn (?User $user) => $user && $user->status === 'active')->unique('id')->values();
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ExecutiveExport;
+use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\Feedback;
 use App\Models\Payroll;
@@ -40,7 +41,10 @@ class ExecutiveController extends Controller
     public function pdf(Request $request)
     {
         abort_unless($request->user()->isExecutive(), 403);
-        $binary = $this->pdf->executive($this->payload());
+        $payload = $this->payload();
+        $document = $this->pdf->executiveDocument($payload);
+        $binary = $this->pdf->executive($payload, $document['hash']);
+        $this->recordIssued($document);
 
         return response($binary, 200, [
             'Content-Type' => 'application/pdf',
@@ -58,22 +62,23 @@ class ExecutiveController extends Controller
         ]);
 
         $department = Department::query()->findOrFail($data['department_id']);
+        $receiverId = $department->head_id ?: ($department->hasValidActingHead() ? $department->acting_head_id : null);
         $feedback = Feedback::query()->create([
             'plan_and_report_id' => $data['plan_and_report_id'] ?? null,
             'department_id' => $department->id,
             'sender_id' => $request->user()->id,
-            'receiver_id' => $department->head_id,
+            'receiver_id' => $receiverId,
             'kind' => 'directive',
             'comment' => $data['comment'],
         ]);
 
-        if ($department->head_id) {
-            User::query()->find($department->head_id)?->notify(new WorkflowNotification(
-                __('ui.directive'),
-                $data['comment'],
-                $data['plan_and_report_id'] ? route('plans.show', $data['plan_and_report_id']) : route('dashboard')
-            ));
-        }
+        $planId = $data['plan_and_report_id'] ?? null;
+        $url = $planId ? route('plans.show', $planId) : route('dashboard');
+        $department->leaders()->each(fn (User $user) => $user->notify(new WorkflowNotification(
+            __('ui.directive'),
+            $data['comment'],
+            $url
+        )));
         $this->audit->log('directive.sent', $feedback, [], ['comment' => $data['comment']], $department->id);
 
         return back()->with('status', __('ui.saved'));
@@ -108,6 +113,25 @@ class ExecutiveController extends Controller
                 ],
             ],
         ];
+    }
+
+    private function recordIssued(array $document): void
+    {
+        $exists = AuditLog::query()
+            ->where('action', 'executive.issued')
+            ->where('new_values->verification_hash', $document['hash'])
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        $this->audit->log('executive.issued', null, [], [
+            'verification_hash' => $document['hash'],
+            'budget_year' => $document['snapshot']['budget_year'],
+            'paid_total' => $document['snapshot']['paid_total'],
+            'departments' => count($document['snapshot']['rows']),
+        ]);
     }
 
     private function rows()

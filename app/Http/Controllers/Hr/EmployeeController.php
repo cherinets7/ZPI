@@ -12,7 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Maatwebsite\Excel\Exceptions\NoTypeDetectedException;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Reader\Exception as SpreadsheetReaderException;
 
 class EmployeeController extends Controller
 {
@@ -143,8 +145,21 @@ class EmployeeController extends Controller
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv'],
         ]);
 
-        Excel::import(new EmployeesImport($request->user()->department, $request->user()), $request->file('file'));
+        $import = new EmployeesImport($request->user()->department, $request->user());
+        try {
+            Excel::import($import, $request->file('file'));
+        } catch (SpreadsheetReaderException|NoTypeDetectedException) {
+            return back()->withErrors(['file' => __('ui.import_unreadable')]);
+        }
 
-        return back()->with('status', __('ui.saved'));
+        if ($import->errors !== []) {
+            $response = back()->withErrors(['file' => $import->errors]);
+
+            return $import->imported > 0
+                ? $response->with('status', __('ui.import_partial', ['count' => $import->imported]))
+                : $response;
+        }
+
+        return back()->with('status', __('ui.import_done', ['count' => $import->imported]));
     }
 }
