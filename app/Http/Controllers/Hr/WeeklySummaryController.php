@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Notifications\WorkflowNotification;
 use App\Services\AttendanceService;
 use App\Services\AuditService;
-use App\Support\EthiopianDateHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -97,14 +96,12 @@ class WeeklySummaryController extends Controller
     {
         $this->authorize('forward', $summary);
         $summary->update(['status' => 'forwarded']);
-        $headId = $summary->department?->head_id;
-        if ($headId) {
-            User::query()->find($headId)?->notify(new WorkflowNotification(
-                __('ui.forwarded'),
-                __('ui.weekly').' '.$summary->eth_period,
-                route('hr.weekly.show', $summary)
-            ));
-        }
+        $summary->loadMissing('department');
+        $summary->department?->leaders()->each(fn (User $user) => $user->notify(new WorkflowNotification(
+            __('ui.forwarded'),
+            __('ui.weekly').' '.$summary->eth_period,
+            route('hr.weekly.show', $summary)
+        )));
         $this->audit->log('weekly.forwarded', $summary, [], ['status' => 'forwarded'], $summary->department_id);
 
         return back()->with('status', __('ui.forwarded'));

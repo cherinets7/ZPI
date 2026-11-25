@@ -9,6 +9,8 @@ use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
 use Mpdf\Mpdf;
 
 class PdfService
@@ -39,10 +41,47 @@ class PdfService
         ]);
     }
 
-    public function executive(array $data): string
+    /**
+     * @return array{hash: string, snapshot: array{budget_year: int, paid_total: float, rows: array<int, array{department: string, score: float, payroll: float}>}}
+     */
+    public function executiveDocument(array $data): array
     {
+        $rows = collect($data['rows'] ?? [])->map(function ($row) {
+            $row = (array) $row;
+
+            return [
+                'department' => (string) ($row['department'] ?? ''),
+                'score' => round((float) ($row['score'] ?? 0), 2),
+                'payroll' => round((float) ($row['payroll'] ?? 0), 2),
+            ];
+        })->values()->all();
+
+        $snapshot = [
+            'budget_year' => (int) ($data['budgetYear'] ?? 0),
+            'paid_total' => round((float) ($data['paidTotal'] ?? 0), 2),
+            'rows' => $rows,
+        ];
+
+        return [
+            'hash' => $this->verificationHash(
+                'executive',
+                $snapshot['budget_year'],
+                json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
+            ),
+            'snapshot' => $snapshot,
+        ];
+    }
+
+    public function executive(array $data, ?string $hash = null): string
+    {
+        $hash ??= $this->executiveDocument($data)['hash'];
+        $url = route('documents.verify', $hash);
+
         return $this->render('pdf.executive', array_merge($data, [
             'institution' => Setting::institutionName(),
+            'qr' => $this->qrDataUri($url),
+            'verifyUrl' => $url,
+            'verificationHash' => $hash,
         ]));
     }
 
@@ -51,9 +90,9 @@ class PdfService
         $temp = storage_path('app/mpdf');
         File::ensureDirectoryExists($temp);
 
-        $defaultConfig = (new \Mpdf\Config\ConfigVariables)->getDefaults();
+        $defaultConfig = (new ConfigVariables)->getDefaults();
         $fontDirs = $defaultConfig['fontDir'];
-        $defaultFontConfig = (new \Mpdf\Config\FontVariables)->getDefaults();
+        $defaultFontConfig = (new FontVariables)->getDefaults();
         $fontData = $defaultFontConfig['fontdata'];
 
         $mpdf = new Mpdf([

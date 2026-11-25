@@ -7,6 +7,7 @@
         h1 { color: #0f3d32; font-size: 18px; }
         table { width: 100%; border-collapse: collapse; }
         td, th { border: 1px solid #cfd8d4; padding: 6px; }
+        .muted { color: #5c6b66; }
     </style>
 </head>
 <body>
@@ -21,5 +22,10 @@
         @endforeach
         </tbody>
     </table>
+    @if(!empty($qr))
+        <p><img src="{{ $qr }}" width="110" height="110" alt="QR"></p>
+        <div class="muted">{{ __('ui.qr_caption') }} {{ $verifyUrl }}</div>
+        <p class="muted">{{ __('ui.hash') }}: {{ $verificationHash }}</p>
+    @endif
 </body>
 </html>
