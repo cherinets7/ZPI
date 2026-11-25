@@ -60,7 +60,11 @@
                 @endforeach
             </tr>
         @empty
-            <tr><td colspan="{{ count($days) + 1 }}">{{ __('ui.no_records') }}</td></tr>
+            @include('partials.empty', [
+                'columns' => count($days) + 1,
+                'title' => __('ui.empty_attendance_title'),
+                'body' => __('ui.empty_attendance_body'),
+            ])
         @endforelse
         </tbody>
     </table></div>

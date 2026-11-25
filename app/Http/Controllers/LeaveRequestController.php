@@ -44,6 +44,15 @@ class LeaveRequestController extends Controller
             'days' => $this->days($data['start_date'], $data['end_date']),
             'status' => 'draft',
         ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id' => $leave->id,
+                'update_url' => route('leaves.update', $leave),
+                'edit_url' => route('leaves.show', $leave),
+                'message' => __('ui.autosaved'),
+            ]);
+        }
+
         $this->audit->log('leave.created', $leave, [], $leave->toArray(), $leave->department_id);
 
         return redirect()->route('leaves.show', $leave)->with('status', __('ui.saved'));
@@ -65,6 +74,15 @@ class LeaveRequestController extends Controller
             ...$data,
             'days' => $this->days($data['start_date'], $data['end_date']),
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id' => $leave->id,
+                'update_url' => route('leaves.update', $leave),
+                'edit_url' => route('leaves.show', $leave),
+                'message' => __('ui.autosaved'),
+            ]);
+        }
 
         return redirect()->route('leaves.show', $leave)->with('status', __('ui.saved'));
     }

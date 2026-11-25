@@ -15,7 +15,8 @@
 <p class="text-secondary small">{{ __('ui.monday_sunday') }} {{ __('ui.budget_help') }}</p>
 <form class="row g-2 mb-3" method="GET">
     <div class="col-md-3">
-        <select class="form-select" name="status">
+        <label class="visually-hidden" for="filter-status">{{ __('ui.status') }}</label>
+        <select id="filter-status" class="form-select" name="status">
             <option value="">{{ __('ui.all') }}</option>
             @foreach(config('workflow.plan_statuses') as $status)
                 <option value="{{ $status }}" @selected(request('status') === $status)>{{ __('ui.'.$status) }}</option>
@@ -23,7 +24,8 @@
         </select>
     </div>
     <div class="col-md-3">
-        <select class="form-select" name="period_type">
+        <label class="visually-hidden" for="filter-period">{{ __('ui.period') }}</label>
+        <select id="filter-period" class="form-select" name="period_type">
             <option value="">{{ __('ui.all') }}</option>
             @foreach(config('workflow.period_types') as $type)
                 <option value="{{ $type }}" @selected(request('period_type') === $type)>{{ __('ui.'.$type) }}</option>
@@ -52,11 +54,16 @@
                 <td>{{ $plan->department?->name }}</td>
                 <td>{{ \App\Support\EthiopianDateHelper::periodLabel($plan->period_type, (int) $plan->eth_year, (int) $plan->eth_period) }}</td>
                 <td>{{ $plan->performance_score ?? '—' }}</td>
-                <td>@include('partials.status', ['status' => $plan->status]) @if($plan->locked_at)<span class="badge text-bg-dark">{{ __('ui.locked') }}</span>@endif</td>
+                <td>@include('partials.status', ['status' => $plan->status]) @if($plan->locked_at)<span class="badge badge-status badge-status-locked">{{ __('ui.locked') }}</span>@endif</td>
                 <td><a href="{{ route('plans.show', $plan) }}">{{ __('ui.view') }}</a></td>
             </tr>
         @empty
-            <tr><td colspan="6" class="text-secondary">{{ __('ui.no_records') }}</td></tr>
+            @include('partials.empty', [
+                'columns' => 6,
+                'title' => request()->filled('status') || request()->filled('period_type') || request()->filled('department_id') ? __('ui.empty_filtered_title') : __('ui.empty_plans_title'),
+                'body' => request()->filled('status') || request()->filled('period_type') || request()->filled('department_id') ? __('ui.empty_filtered_body') : __('ui.empty_plans_body'),
+                'action' => (request()->filled('status') || request()->filled('period_type') || request()->filled('department_id') || auth()->user()->cannot('create', App\Models\PlanAndReport::class)) ? null : ['url' => route('plans.create'), 'label' => __('ui.create')],
+            ])
         @endforelse
         </tbody>
     </table>

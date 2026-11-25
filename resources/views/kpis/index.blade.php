@@ -44,7 +44,12 @@
             </td>
         </tr>
     @empty
-        <tr><td colspan="6">{{ __('ui.no_records') }}</td></tr>
+        @include('partials.empty', [
+            'columns' => 6,
+            'title' => request()->filled('department_id') ? __('ui.empty_filtered_title') : __('ui.empty_kpis_title'),
+            'body' => request()->filled('department_id') ? __('ui.empty_filtered_body') : (auth()->user()->can('create', App\Models\KpiIndicator::class) ? __('ui.empty_kpis_body') : __('ui.empty_kpis_wait')),
+            'action' => (! request()->filled('department_id') && auth()->user()->can('create', App\Models\KpiIndicator::class)) ? ['url' => route('kpis.create'), 'label' => __('ui.create')] : null,
+        ])
     @endforelse
     </tbody>
 </table></div>

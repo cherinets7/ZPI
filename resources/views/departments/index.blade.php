@@ -9,7 +9,7 @@
 <div class="table-responsive card"><table class="table mb-0">
     <thead><tr><th>{{ __('ui.name') }}</th><th>{{ __('ui.code') }}</th><th>{{ __('ui.head') }}</th><th>{{ __('ui.acting_head') }}</th><th>{{ __('ui.status') }}</th><th></th></tr></thead>
     <tbody>
-    @foreach($departments as $department)
+    @forelse($departments as $department)
         <tr>
             <td>{{ $department->name }}</td>
             <td>{{ $department->code }}</td>
@@ -18,7 +18,14 @@
             <td>@include('partials.status', ['status' => $department->is_active ? 'active' : 'inactive'])</td>
             <td><a href="{{ route('departments.show', $department) }}">{{ __('ui.view') }}</a></td>
         </tr>
-    @endforeach
+    @empty
+        @include('partials.empty', [
+            'columns' => 6,
+            'title' => __('ui.empty_departments_title'),
+            'body' => __('ui.empty_departments_body'),
+            'action' => auth()->user()->can('create', App\Models\Department::class) ? ['url' => route('departments.create'), 'label' => __('ui.create')] : null,
+        ])
+    @endforelse
     </tbody>
 </table></div>
 <div class="mt-3">{{ $departments->links() }}</div>

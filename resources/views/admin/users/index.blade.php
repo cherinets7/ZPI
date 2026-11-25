@@ -7,7 +7,7 @@
 <div class="table-responsive card"><table class="table mb-0">
     <thead><tr><th>{{ __('ui.name') }}</th><th>{{ __('ui.email') }}</th><th>{{ __('ui.role') }}</th><th>{{ __('ui.department') }}</th><th>{{ __('ui.status') }}</th><th></th></tr></thead>
     <tbody>
-    @foreach($users as $account)
+    @forelse($users as $account)
         <tr>
             <td>{{ $account->name }}</td>
             <td>{{ $account->email }}</td>
@@ -21,7 +21,14 @@
                 @endif
             </td>
         </tr>
-    @endforeach
+    @empty
+        @include('partials.empty', [
+            'columns' => 6,
+            'title' => __('ui.empty_users_title'),
+            'body' => __('ui.empty_users_body'),
+            'action' => ['url' => route('admin.users.create'), 'label' => __('ui.create')],
+        ])
+    @endforelse
     </tbody>
 </table></div>
 <div class="mt-3">{{ $users->links() }}</div>

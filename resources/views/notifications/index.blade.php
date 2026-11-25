@@ -15,7 +15,10 @@
             @endif
         </div>
     @empty
-        <div class="list-group-item">{{ __('ui.notification_empty') }}</div>
+        <div class="list-group-item empty-state border-0">
+            <p class="empty-state-title">{{ __('ui.empty_notifications_title') }}</p>
+            <p class="empty-state-body mb-0">{{ __('ui.empty_notifications_body') }}</p>
+        </div>
     @endforelse
 </div>
 <div class="mt-3">{{ $notifications->links() }}</div>

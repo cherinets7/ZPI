@@ -37,7 +37,11 @@
                     <td><input class="form-control" type="number" step="0.01" name="bonus[{{ $employee->id }}]" value="0"></td>
                 </tr>
             @empty
-                <tr><td colspan="3">{{ __('ui.no_records') }}</td></tr>
+                @include('partials.empty', [
+                    'columns' => 3,
+                    'title' => __('ui.empty_employees_title'),
+                    'body' => __('ui.empty_employees_body'),
+                ])
             @endforelse
             </tbody>
         </table>
