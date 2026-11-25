@@ -97,7 +97,20 @@ class PlanReportController extends Controller
                 'is_rollup' => false,
             ]);
         } catch (QueryException) {
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['eth_period' => __('ui.duplicate_period')]);
+            }
+
             return back()->withInput()->withErrors(['eth_period' => __('ui.duplicate_period')]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id' => $plan->id,
+                'update_url' => route('plans.update', $plan),
+                'edit_url' => route('plans.edit', $plan),
+                'message' => __('ui.autosaved'),
+            ]);
         }
 
         $this->audit->log('plan.created', $plan, [], $plan->toArray(), $plan->department_id);
@@ -135,6 +148,15 @@ class PlanReportController extends Controller
             'period_start' => $bounds['start']->toDateString(),
             'period_end' => $bounds['end']->toDateString(),
         ])->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id' => $plan->id,
+                'update_url' => route('plans.update', $plan),
+                'edit_url' => route('plans.edit', $plan),
+                'message' => __('ui.autosaved'),
+            ]);
+        }
 
         $this->audit->log('plan.updated', $plan, [], $plan->toArray(), $plan->department_id);
 

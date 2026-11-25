@@ -18,9 +18,14 @@
             <td>@include('partials.status', ['status' => $leave->status])</td>
             <td><a href="{{ route('leaves.show', $leave) }}">{{ __('ui.view') }}</a></td>
         </tr>
-    @empty
-        <tr><td colspan="6">{{ __('ui.no_records') }}</td></tr>
-    @endforelse
+        @empty
+            @include('partials.empty', [
+                'columns' => 6,
+                'title' => __('ui.empty_leaves_title'),
+                'body' => __('ui.empty_leaves_body'),
+                'action' => auth()->user()->can('create', App\Models\LeaveRequest::class) ? ['url' => route('leaves.create'), 'label' => __('ui.create')] : null,
+            ])
+        @endforelse
     </tbody>
 </table></div>
 <div class="mt-3">{{ $leaves->links() }}</div>

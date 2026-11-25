@@ -13,6 +13,21 @@ class NotificationController extends Controller
         return view('notifications.index', compact('notifications'));
     }
 
+    public function feed(Request $request)
+    {
+        $items = $request->user()->unreadNotifications()->latest()->limit(8)->get();
+
+        return response()->json([
+            'count' => $request->user()->unreadNotifications()->count(),
+            'items' => $items->map(fn ($notification) => [
+                'id' => $notification->id,
+                'title' => (string) ($notification->data['title'] ?? ''),
+                'body' => (string) ($notification->data['body'] ?? ''),
+                'read_url' => route('notifications.read', $notification->id),
+            ])->values(),
+        ]);
+    }
+
     public function read(Request $request, string $id)
     {
         $notification = $request->user()->notifications()->where('id', $id)->firstOrFail();

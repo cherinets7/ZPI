@@ -23,7 +23,12 @@
             </td>
         </tr>
     @empty
-        <tr><td colspan="4">{{ __('ui.no_records') }}</td></tr>
+        @include('partials.empty', [
+            'columns' => 4,
+            'title' => __('ui.empty_holidays_title'),
+            'body' => __('ui.empty_holidays_body'),
+            'action' => auth()->user()->can('create', App\Models\Holiday::class) ? ['url' => route('holidays.create'), 'label' => __('ui.create')] : null,
+        ])
     @endforelse
     </tbody>
 </table></div>

@@ -21,7 +21,11 @@
             <td><a href="{{ route('hr.weekly.show', $summary) }}">{{ __('ui.view') }}</a></td>
         </tr>
     @empty
-        <tr><td colspan="6">{{ __('ui.no_records') }}</td></tr>
+        @include('partials.empty', [
+            'columns' => 6,
+            'title' => __('ui.empty_weekly_title'),
+            'body' => auth()->user()->can('prepare', App\Models\HrWeeklySummary::class) ? __('ui.empty_weekly_body') : __('ui.empty_weekly_wait'),
+        ])
     @endforelse
     </tbody>
 </table></div>

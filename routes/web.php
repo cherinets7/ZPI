@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExecutiveController;
@@ -20,7 +21,10 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PersonalSettingController;
 use App\Http\Controllers\PlanReportController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SystemSettingController;
+use App\Http\Controllers\ThemeController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +36,8 @@ Route::middleware('guest')->group(function () {
     Route::post('forgot-password', [ForgotPasswordController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
     Route::get('reset-password/{token}', [ResetPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [ResetPasswordController::class, 'store'])->middleware('throttle:5,1')->name('password.update');
+    Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.login');
+    Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:5,1')->name('two-factor.store');
 });
 
 Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
@@ -43,8 +49,14 @@ Route::middleware(['auth', 'role'])->group(function () {
 
     Route::get('settings', [PersonalSettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [PersonalSettingController::class, 'update'])->name('settings.update');
+    Route::post('settings/two-factor', [TwoFactorController::class, 'start'])->name('settings.two-factor.start');
+    Route::post('settings/two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('settings.two-factor.confirm');
+    Route::delete('settings/two-factor', [TwoFactorController::class, 'destroy'])->name('settings.two-factor.destroy');
+    Route::put('theme', [ThemeController::class, 'update'])->name('theme.update');
+    Route::get('search', [SearchController::class, 'index'])->name('search');
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/feed', [NotificationController::class, 'feed'])->name('notifications.feed');
     Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 

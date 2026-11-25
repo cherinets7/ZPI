@@ -25,7 +25,12 @@
             </td>
         </tr>
     @empty
-        <tr><td colspan="5">{{ __('ui.no_records') }}</td></tr>
+        @include('partials.empty', [
+            'columns' => 5,
+            'title' => __('ui.empty_employees_title'),
+            'body' => __('ui.empty_employees_body'),
+            'action' => ['url' => route('hr.employees.create'), 'label' => __('ui.register_employee')],
+        ])
     @endforelse
     </tbody>
 </table></div>

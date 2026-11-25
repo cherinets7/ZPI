@@ -25,7 +25,12 @@
             <td><a href="{{ route('payrolls.show', $payroll) }}">{{ __('ui.view') }}</a></td>
         </tr>
     @empty
-        <tr><td colspan="6">{{ __('ui.no_records') }}</td></tr>
+        @include('partials.empty', [
+            'columns' => 6,
+            'title' => __('ui.empty_payrolls_title'),
+            'body' => auth()->user()->can('create', App\Models\Payroll::class) ? __('ui.empty_payrolls_body') : __('ui.empty_payrolls_wait'),
+            'action' => auth()->user()->can('create', App\Models\Payroll::class) ? ['url' => route('payrolls.create'), 'label' => __('ui.calculate')] : null,
+        ])
     @endforelse
     </tbody>
 </table></div>

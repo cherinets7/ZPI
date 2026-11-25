@@ -12,7 +12,11 @@
             <td>{{ $log->department?->name ?? '—' }}</td>
         </tr>
     @empty
-        <tr><td colspan="4">{{ __('ui.no_records') }}</td></tr>
+        @include('partials.empty', [
+            'columns' => 4,
+            'title' => __('ui.empty_audit_title'),
+            'body' => __('ui.empty_audit_body'),
+        ])
     @endforelse
     </tbody>
 </table></div>

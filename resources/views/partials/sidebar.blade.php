@@ -7,8 +7,8 @@
 </div>
 <nav class="nav flex-column">
     @foreach($navItems ?? [] as $item)
-        <a class="nav-link {{ request()->routeIs($item['active']) ? 'active' : '' }}" href="{{ route($item['route'], $item['query'] ?? []) }}">
-            <i class="bi bi-{{ $item['icon'] }} me-2"></i>{{ $item['label'] }}
+        <a class="nav-link {{ request()->routeIs($item['active']) ? 'active' : '' }}" href="{{ route($item['route'], $item['query'] ?? []) }}" @if(request()->routeIs($item['active'])) aria-current="page" @endif @if(!empty($mobile)) data-bs-dismiss="offcanvas" @endif>
+            <i class="bi bi-{{ $item['icon'] }} me-2" aria-hidden="true"></i>{{ $item['label'] }}
         </a>
     @endforeach
 </nav>

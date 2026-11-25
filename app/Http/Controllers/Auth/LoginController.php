@@ -27,7 +27,8 @@ class LoginController extends Controller
             ]);
         }
 
-        if (Auth::user()->status !== 'active') {
+        $user = Auth::user();
+        if ($user->status !== 'active') {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -37,8 +38,18 @@ class LoginController extends Controller
             ]);
         }
 
+        if ($user->two_factor_confirmed_at) {
+            $remember = $request->boolean('remember');
+            Auth::logout();
+            $request->session()->regenerate();
+            $request->session()->put('login.2fa_id', $user->id);
+            $request->session()->put('login.2fa_remember', $remember);
+
+            return redirect()->route('two-factor.login');
+        }
+
         $request->session()->regenerate();
-        session(['locale' => Auth::user()->locale ?: 'en']);
+        session(['locale' => $user->locale ?: 'en']);
 
         return redirect()->intended(route('dashboard'));
     }

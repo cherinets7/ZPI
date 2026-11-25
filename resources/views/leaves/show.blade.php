@@ -15,26 +15,30 @@
     @endcan
 </div>
 @can('update', $leave)
-    <form id="leave-edit" method="POST" action="{{ route('leaves.update', $leave) }}" class="card card-body mb-3">
+    <form id="leave-edit" method="POST" action="{{ route('leaves.update', $leave) }}" class="card card-body mb-3" data-autosave>
         @csrf @method('PUT')
+        <p class="small text-secondary" data-autosave-status data-failed="{{ __('ui.autosave_failed') }}" aria-live="polite"></p>
         <input type="hidden" name="type" value="{{ $leave->type }}">
         <div class="row">
-            <div class="col-md-6 mb-2"><input class="form-control" type="date" name="start_date" value="{{ $leave->start_date->toDateString() }}"></div>
-            <div class="col-md-6 mb-2"><input class="form-control" type="date" name="end_date" value="{{ $leave->end_date->toDateString() }}"></div>
+            <div class="col-md-6 mb-2"><label class="form-label" for="leave-start">{{ __('ui.start_date') }}</label><input class="form-control" id="leave-start" type="date" name="start_date" value="{{ $leave->start_date->toDateString() }}"></div>
+            <div class="col-md-6 mb-2"><label class="form-label" for="leave-end">{{ __('ui.end_date') }}</label><input class="form-control" id="leave-end" type="date" name="end_date" value="{{ $leave->end_date->toDateString() }}"></div>
         </div>
-        <textarea class="form-control mb-2" name="reason" required>{{ $leave->reason }}</textarea>
+        <label class="form-label" for="leave-reason">{{ __('ui.reason') }}</label>
+        <textarea class="form-control mb-2" id="leave-reason" name="reason" required>{{ $leave->reason }}</textarea>
         <button class="btn btn-outline-secondary">{{ __('ui.save') }}</button>
     </form>
 @endcan
 @can('decide', $leave)
     <form method="POST" action="{{ route('leaves.approve', $leave) }}" class="card card-body mb-2">
         @csrf
-        <textarea class="form-control mb-2" name="review_note" placeholder="{{ __('ui.review_note') }}"></textarea>
+        <label class="form-label" for="leave-approve-note">{{ __('ui.review_note') }}</label>
+        <textarea class="form-control mb-2" id="leave-approve-note" name="review_note"></textarea>
         <button class="btn btn-success">{{ __('ui.approve') }}</button>
     </form>
     <form method="POST" action="{{ route('leaves.reject', $leave) }}" class="card card-body">
         @csrf
-        <textarea class="form-control mb-2" name="review_note" required></textarea>
+        <label class="form-label" for="leave-reject-note">{{ __('ui.review_note') }}</label>
+        <textarea class="form-control mb-2" id="leave-reject-note" name="review_note" required></textarea>
         <button class="btn btn-outline-danger">{{ __('ui.reject') }}</button>
     </form>
 @endcan
