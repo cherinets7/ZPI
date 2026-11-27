@@ -6,8 +6,9 @@ use App\Exceptions\PayrollException;
 use App\Models\Department;
 use App\Models\Payroll;
 use App\Models\User;
-use App\Services\PdfService;
+use App\Services\AuditService;
 use App\Services\PayrollService;
+use App\Services\PdfService;
 use App\Support\EthiopianDateHelper;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,7 @@ class PayrollController extends Controller
     public function __construct(
         private PayrollService $payrolls,
         private PdfService $pdf,
+        private AuditService $audit,
     ) {}
 
     public function index(Request $request)
@@ -85,6 +87,50 @@ class PayrollController extends Controller
         return view('payrolls.show', compact('payroll'));
     }
 
+    public function edit(Payroll $payroll)
+    {
+        $this->authorize('update', $payroll);
+        $payroll->load(['user', 'department']);
+
+        return view('payrolls.edit', [
+            'payroll' => $payroll,
+            'bonus' => $this->manualBonus($payroll),
+        ]);
+    }
+
+    public function update(Request $request, Payroll $payroll)
+    {
+        $this->authorize('update', $payroll);
+        $data = $request->validate([
+            'bonus' => ['required', 'numeric'],
+        ]);
+        $before = $payroll->only(['bonus_or_adjustment', 'net_pay']);
+        $money = $this->payrolls->compute(
+            (float) $payroll->base_salary,
+            (float) $payroll->performance_score,
+            (float) $payroll->attendance_ratio,
+            (float) $data['bonus']
+        );
+        $payroll->update([
+            'bonus_or_adjustment' => $money['bonus_or_adjustment'],
+            'net_pay' => $money['net_pay'],
+        ]);
+        $this->audit->log('payroll.updated', $payroll, $before, $payroll->only(['bonus_or_adjustment', 'net_pay']), $payroll->department_id);
+
+        return redirect()->route('payrolls.show', $payroll)->with('status', __('ui.saved'));
+    }
+
+    public function destroy(Payroll $payroll)
+    {
+        $this->authorize('delete', $payroll);
+        $departmentId = $payroll->department_id;
+        $before = $payroll->only(['user_id', 'eth_year', 'eth_month', 'net_pay', 'status']);
+        $payroll->delete();
+        $this->audit->log('payroll.deleted', null, $before, [], $departmentId);
+
+        return redirect()->route('payrolls.index')->with('status', __('ui.deleted'));
+    }
+
     public function pay(Request $request, Payroll $payroll)
     {
         $this->authorize('pay', $payroll);
@@ -107,5 +153,17 @@ class PayrollController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="payslip-'.$payroll->id.'.pdf"',
         ]);
+    }
+
+    private function manualBonus(Payroll $payroll): float
+    {
+        $withoutBonus = $this->payrolls->compute(
+            (float) $payroll->base_salary,
+            (float) $payroll->performance_score,
+            (float) $payroll->attendance_ratio,
+            0
+        );
+
+        return round((float) $payroll->net_pay - $withoutBonus['net_pay'], 2);
     }
 }

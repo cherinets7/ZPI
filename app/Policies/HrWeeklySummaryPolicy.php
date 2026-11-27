@@ -46,4 +46,21 @@ class HrWeeklySummaryPolicy
     {
         return $user->managesDepartment($summary->department_id) && $summary->status === 'forwarded';
     }
+
+    public function update(User $user, HrWeeklySummary $summary): bool
+    {
+        return $this->draftOwnedByHr($user, $summary);
+    }
+
+    public function delete(User $user, HrWeeklySummary $summary): bool
+    {
+        return $this->draftOwnedByHr($user, $summary);
+    }
+
+    private function draftOwnedByHr(User $user, HrWeeklySummary $summary): bool
+    {
+        return $user->role === 'hr_specialist'
+            && (int) $user->department_id === (int) $summary->department_id
+            && in_array($summary->status, ['draft', 'rejected'], true);
+    }
 }

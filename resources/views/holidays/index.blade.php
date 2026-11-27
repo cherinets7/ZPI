@@ -16,6 +16,7 @@
             <td>{{ \App\Support\EthiopianDateHelper::monthName((int) $holiday->eth_month) }} {{ $holiday->eth_day }}, {{ $holiday->eth_year }}</td>
             <td>{{ $holiday->gregorian_date->toDateString() }}</td>
             <td>
+                <a href="{{ route('holidays.show', $holiday) }}">{{ __('ui.view') }}</a>
                 @can('update', $holiday)
                     <a href="{{ route('holidays.edit', $holiday) }}">{{ __('ui.edit') }}</a>
                     <form class="d-inline" method="POST" action="{{ route('holidays.destroy', $holiday) }}">@csrf @method('DELETE')<button class="btn btn-link btn-sm text-danger">{{ __('ui.delete') }}</button></form>

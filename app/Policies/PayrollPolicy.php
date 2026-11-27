@@ -36,4 +36,21 @@ class PayrollPolicy
     {
         return $user->role === 'finance_dept' && $payroll->status === 'calculated';
     }
+
+    public function update(User $user, Payroll $payroll): bool
+    {
+        return $this->openForFinance($user, $payroll);
+    }
+
+    public function delete(User $user, Payroll $payroll): bool
+    {
+        return $this->openForFinance($user, $payroll);
+    }
+
+    private function openForFinance(User $user, Payroll $payroll): bool
+    {
+        return $user->role === 'finance_dept'
+            && $payroll->paid_at === null
+            && $payroll->status !== 'paid';
+    }
 }

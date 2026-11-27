@@ -1,6 +1,13 @@
 @extends('layouts.app')
 @section('content')
-<h1 class="h3">{{ __('ui.attendance') }}</h1>
+<div class="d-flex justify-content-between mb-3">
+    <h1 class="h3">{{ __('ui.attendance') }}</h1>
+    @can('create', App\Models\HrDailyLog::class)
+        @if($canEdit)
+            <a class="btn btn-zpi" href="{{ route('hr.attendance.create') }}">{{ __('ui.create') }}</a>
+        @endif
+    @endcan
+</div>
 <p class="text-secondary">{{ __('ui.working_hours') }} {{ __('ui.holiday_excluded') }}</p>
 <form class="row g-2 mb-3" method="GET">
     @if($departments->count() > 1)
@@ -52,9 +59,10 @@
                                 @endforeach
                             </select>
                             <input class="form-control form-control-sm" type="number" step="0.5" min="0" max="24" name="rows[{{ $i }}][hours]" value="{{ $log->hours ?? 8 }}">
+                            @if($log)<div><a class="small" href="{{ route('hr.attendance.show', $log) }}">{{ __('ui.view') }}</a></div>@endif
                             @php $i++; @endphp
                         @else
-                            @if($log) @include('partials.status', ['status' => $log->status]) <span class="small">{{ $log->hours }}</span> @else <span class="text-secondary">—</span> @endif
+                            @if($log) @include('partials.status', ['status' => $log->status]) <span class="small">{{ $log->hours }}</span> <a class="small" href="{{ route('hr.attendance.show', $log) }}">{{ __('ui.view') }}</a> @else <span class="text-secondary">—</span> @endif
                         @endif
                     </td>
                 @endforeach

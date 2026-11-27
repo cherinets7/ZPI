@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -37,5 +38,20 @@ class Feedback extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->hasRole('plan_dept', 'zone_chief', 'zone_deputy', 'super_admin')) {
+            return $query;
+        }
+
+        if ($user->hasRole('dev_plan_specialist') || $user->managesDepartment($user->department)) {
+            return $query->where('department_id', $user->department_id);
+        }
+
+        return $query->where(function (Builder $inner) use ($user) {
+            $inner->where('receiver_id', $user->id)->orWhere('sender_id', $user->id);
+        });
     }
 }
