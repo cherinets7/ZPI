@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Feedback;
 use App\Models\User;
 
 class Navigation
@@ -19,6 +20,10 @@ class Navigation
 
         if ($user->hasRole('employee', 'dev_plan_specialist', 'dept_head', 'plan_dept', 'zone_chief', 'zone_deputy', 'super_admin') || $acting) {
             $items[] = self::item('ui.plans_reports', 'plans.index', 'clipboard-data', 'plans.*');
+        }
+
+        if ($user->can('viewAny', Feedback::class)) {
+            $items[] = self::item('ui.feedback', 'feedbacks.index', 'chat-left-text', 'feedbacks.*');
         }
 
         if ($user->hasRole('employee') || $acting) {

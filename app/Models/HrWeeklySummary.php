@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\EthiopianDateHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class HrWeeklySummary extends Model
 {
@@ -54,6 +56,18 @@ class HrWeeklySummary extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public static function closesAttendance(int $departmentId, Carbon $date): bool
+    {
+        $identity = EthiopianDateHelper::weekIdentity($date);
+        $summary = static::query()
+            ->where('department_id', $departmentId)
+            ->where('eth_year', $identity['budget_year'])
+            ->where('eth_period', $identity['week'])
+            ->first();
+
+        return $summary !== null && in_array($summary->status, ['verified', 'forwarded', 'approved'], true);
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

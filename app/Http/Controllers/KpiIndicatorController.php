@@ -50,6 +50,14 @@ class KpiIndicatorController extends Controller
         return redirect()->route('kpis.index')->with('status', __('ui.saved'));
     }
 
+    public function show(KpiIndicator $kpi)
+    {
+        $this->authorize('view', $kpi);
+        $kpi->load('department');
+
+        return view('kpis.show', ['indicator' => $kpi]);
+    }
+
     public function edit(KpiIndicator $kpi)
     {
         $this->authorize('update', $kpi);

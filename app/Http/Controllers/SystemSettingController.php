@@ -6,6 +6,8 @@ use App\Models\Setting;
 use App\Services\AuditService;
 use App\Support\EthiopianDateHelper;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class SystemSettingController extends Controller
 {
@@ -16,6 +18,7 @@ class SystemSettingController extends Controller
         abort_unless(auth()->user()?->role === 'super_admin', 403);
 
         return view('admin.settings', [
+            'records' => Setting::query()->orderBy('key')->get(),
             'values' => [
                 'institution_name' => Setting::getValue('institution_name', 'ZPI'),
                 'institution_name_am' => Setting::getValue('institution_name_am', 'ዞን አፈጻጸም'),
@@ -70,5 +73,96 @@ class SystemSettingController extends Controller
         ]);
 
         return back()->with('status', __('ui.saved'));
+    }
+
+    public function create()
+    {
+        $this->authorize('create', Setting::class);
+
+        return view('admin.settings.form', ['setting' => new Setting]);
+    }
+
+    public function store(Request $request)
+    {
+        $this->authorize('create', Setting::class);
+        $data = $request->validate([
+            'key' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', Rule::unique('settings', 'key')],
+            'value' => ['required', 'string', 'max:5000'],
+        ]);
+        if (in_array($data['key'], Setting::PROTECTED_KEYS, true)) {
+            throw ValidationException::withMessages(['key' => __('ui.protected_setting')]);
+        }
+
+        $setting = Setting::query()->create($data);
+        $this->audit->log('settings.created', $setting, [], $setting->only(['key', 'value']));
+
+        return redirect()->route('admin.settings.records.show', $setting)->with('status', __('ui.saved'));
+    }
+
+    public function show(Setting $setting)
+    {
+        $this->authorize('view', $setting);
+
+        return view('admin.settings.show', compact('setting'));
+    }
+
+    public function editRecord(Setting $setting)
+    {
+        $this->authorize('update', $setting);
+
+        return view('admin.settings.form', compact('setting'));
+    }
+
+    public function updateRecord(Request $request, Setting $setting)
+    {
+        $this->authorize('update', $setting);
+        $value = $this->validatedValue($request, $setting);
+        $before = ['value' => $setting->value];
+        $setting->update(['value' => $value]);
+        $this->audit->log('settings.record_updated', $setting, $before, ['value' => $setting->value]);
+
+        return redirect()->route('admin.settings.records.show', $setting)->with('status', __('ui.saved'));
+    }
+
+    public function destroy(Setting $setting)
+    {
+        $this->authorize('delete', $setting);
+        $before = $setting->only(['key', 'value']);
+        $setting->delete();
+        $this->audit->log('settings.deleted', null, $before, []);
+
+        return redirect()->route('admin.settings.edit')->with('status', __('ui.deleted'));
+    }
+
+    private function validatedValue(Request $request, Setting $setting): string
+    {
+        if (in_array($setting->key, ['attendance_weight', 'performance_weight'], true)) {
+            $data = $request->validate(['value' => ['required', 'numeric', 'between:0,1']]);
+            $attendance = $setting->key === 'attendance_weight'
+                ? (float) $data['value']
+                : (float) Setting::getValue('attendance_weight', 0);
+            $performance = $setting->key === 'performance_weight'
+                ? (float) $data['value']
+                : (float) Setting::getValue('performance_weight', 0);
+            if (abs((round($attendance, 2) + round($performance, 2)) - 1) > 0.001) {
+                throw ValidationException::withMessages(['value' => __('ui.weights_must_sum')]);
+            }
+
+            return (string) round((float) $data['value'], 2);
+        }
+
+        if ($setting->key === 'budget_year') {
+            return (string) $request->validate(['value' => ['required', 'integer', 'between:1900,2200']])['value'];
+        }
+
+        if ($setting->key === 'lock_grace_days') {
+            return (string) $request->validate(['value' => ['required', 'integer', 'between:0,60']])['value'];
+        }
+
+        if ($setting->key === 'hours_per_day') {
+            return (string) $request->validate(['value' => ['required', 'numeric', 'between:1,16']])['value'];
+        }
+
+        return $request->validate(['value' => ['required', 'string', 'max:5000']])['value'];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Feedback;
 use App\Models\Holiday;
 use App\Models\KpiIndicator;
 use App\Models\LeaveRequest;
@@ -101,7 +102,7 @@ class SearchController extends Controller
                 'title' => $person->name,
                 'meta' => $person->email,
                 'url' => $user->role === 'super_admin'
-                    ? route('admin.users.edit', $person)
+                    ? route('admin.users.show', $person)
                     : route('hr.employees.edit', $person),
             ])->all());
         }
@@ -114,7 +115,7 @@ class SearchController extends Controller
             $groups[] = $this->group(__('ui.kpis'), $kpis->get()->map(fn (KpiIndicator $kpi) => [
                 'title' => $kpi->title,
                 'meta' => $kpi->unit,
-                'url' => $user->can('update', $kpi) ? route('kpis.edit', $kpi) : route('kpis.index', ['department_id' => $kpi->department_id]),
+                'url' => route('kpis.show', $kpi),
             ])->all());
         }
 
@@ -146,7 +147,21 @@ class SearchController extends Controller
                 ->map(fn (Holiday $holiday) => [
                     'title' => app()->getLocale() === 'am' && $holiday->name_am ? $holiday->name_am : $holiday->name,
                     'meta' => (string) $holiday->eth_year,
-                    'url' => $user->can('update', $holiday) ? route('holidays.edit', $holiday) : route('holidays.index'),
+                    'url' => route('holidays.show', $holiday),
+                ])->all());
+        }
+
+        if ($user->can('viewAny', Feedback::class)) {
+            $groups[] = $this->group(__('ui.feedback'), Feedback::query()
+                ->visibleTo($user)
+                ->where('comment', 'like', $like)
+                ->latest()
+                ->limit(8)
+                ->get()
+                ->map(fn (Feedback $feedback) => [
+                    'title' => $feedback->comment,
+                    'meta' => __('ui.'.$feedback->kind),
+                    'url' => route('feedbacks.show', $feedback),
                 ])->all());
         }
 

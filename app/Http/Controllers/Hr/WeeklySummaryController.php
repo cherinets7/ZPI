@@ -30,12 +30,50 @@ class WeeklySummaryController extends Controller
         return view('hr.weekly.index', compact('summaries'));
     }
 
+    public function create()
+    {
+        $this->authorize('prepare', HrWeeklySummary::class);
+
+        return view('hr.weekly.create');
+    }
+
     public function show(HrWeeklySummary $summary)
     {
         $this->authorize('view', $summary);
         $summary->load(['department', 'preparer', 'verifier', 'approver']);
 
         return view('hr.weekly.show', compact('summary'));
+    }
+
+    public function edit(HrWeeklySummary $summary)
+    {
+        $this->authorize('update', $summary);
+
+        return view('hr.weekly.edit', compact('summary'));
+    }
+
+    public function update(Request $request, HrWeeklySummary $summary)
+    {
+        $this->authorize('update', $summary);
+        $data = $request->validate([
+            'review_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $before = ['review_note' => $summary->review_note];
+        $summary->update(['review_note' => $data['review_note'] ?? null]);
+        $this->audit->log('weekly.updated', $summary, $before, ['review_note' => $summary->review_note], $summary->department_id);
+
+        return redirect()->route('hr.weekly.show', $summary)->with('status', __('ui.saved'));
+    }
+
+    public function destroy(HrWeeklySummary $summary)
+    {
+        $this->authorize('delete', $summary);
+        $departmentId = $summary->department_id;
+        $before = $summary->only(['eth_year', 'eth_period', 'status']);
+        $summary->delete();
+        $this->audit->log('weekly.deleted', null, $before, [], $departmentId);
+
+        return redirect()->route('hr.weekly.index')->with('status', __('ui.deleted'));
     }
 
     public function generate(Request $request)

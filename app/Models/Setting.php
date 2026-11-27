@@ -2,15 +2,36 @@
 
 namespace App\Models;
 
+use App\Support\EthiopianDateHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
 class Setting extends Model
 {
+    /**
+     * Keys read by payroll, the reporting calendar, and the institution header.
+     * They are edited on the system form and cannot be deleted.
+     */
+    public const PROTECTED_KEYS = [
+        'institution_name',
+        'institution_name_am',
+        'budget_year',
+        'lock_grace_days',
+        'attendance_weight',
+        'performance_weight',
+        'hours_per_day',
+        'logo_path',
+    ];
+
     protected $fillable = [
         'key',
         'value',
     ];
+
+    public function isProtected(): bool
+    {
+        return in_array($this->key, self::PROTECTED_KEYS, true);
+    }
 
     public static function getValue(string $key, mixed $default = null): mixed
     {
@@ -50,6 +71,6 @@ class Setting extends Model
             return (int) $configured;
         }
 
-        return \App\Support\EthiopianDateHelper::budgetYearOf(now());
+        return EthiopianDateHelper::budgetYearOf(now());
     }
 }

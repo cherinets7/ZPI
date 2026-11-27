@@ -15,6 +15,7 @@
             <td>{{ $account->department?->name ?? '—' }}</td>
             <td>@include('partials.status', ['status' => $account->status])</td>
             <td>
+                <a href="{{ route('admin.users.show', $account) }}">{{ __('ui.view') }}</a>
                 <a href="{{ route('admin.users.edit', $account) }}">{{ __('ui.edit') }}</a>
                 @if($account->id !== auth()->id() && $account->status === 'active')
                     <form class="d-inline" method="POST" action="{{ route('admin.users.destroy', $account) }}">@csrf @method('DELETE')<button class="btn btn-link btn-sm">{{ __('ui.deactivate') }}</button></form>

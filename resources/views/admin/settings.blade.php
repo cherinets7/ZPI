@@ -20,4 +20,22 @@
     <p class="small text-secondary">{{ __('ui.no_flat_deduction') }} {{ __('ui.budget_help') }}</p>
     <button class="btn btn-zpi">{{ __('ui.save') }}</button>
 </form>
+<div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <h2 class="h5 mb-0">{{ __('ui.setting_records') }}</h2>
+    <a class="btn btn-outline-secondary" href="{{ route('admin.settings.records.create') }}">{{ __('ui.create') }}</a>
+</div>
+<div class="table-responsive card"><table class="table mb-0">
+    <thead><tr><th>{{ __('ui.setting_key') }}</th><th>{{ __('ui.setting_value') }}</th><th></th></tr></thead>
+    <tbody>
+    @forelse($records as $setting)
+        <tr>
+            <td>{{ $setting->key }}</td>
+            <td>{{ \Illuminate\Support\Str::limit((string) $setting->value, 80) }}</td>
+            <td><a href="{{ route('admin.settings.records.show', $setting) }}">{{ __('ui.view') }}</a></td>
+        </tr>
+    @empty
+        @include('partials.empty', ['columns' => 3, 'title' => __('ui.empty_settings_title'), 'body' => __('ui.empty_settings_body')])
+    @endforelse
+    </tbody>
+</table></div>
 @endsection

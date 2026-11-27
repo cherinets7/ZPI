@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-<div class="d-flex justify-content-between mb-3"><h1 class="h3">{{ __('ui.weekly_summaries') }}</h1></div>
+<div class="d-flex justify-content-between mb-3">
+    <h1 class="h3">{{ __('ui.weekly_summaries') }}</h1>
+    @can('prepare', App\Models\HrWeeklySummary::class)
+        <a class="btn btn-zpi" href="{{ route('hr.weekly.create') }}">{{ __('ui.create') }}</a>
+    @endcan
+</div>
 @can('prepare', App\Models\HrWeeklySummary::class)
     <form method="POST" action="{{ route('hr.weekly.generate') }}" class="card card-body mb-3">
         @csrf

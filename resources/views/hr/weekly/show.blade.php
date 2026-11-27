@@ -10,6 +10,12 @@
 </div>
 @if($summary->review_note)<div class="alert alert-light border">{{ $summary->review_note }}</div>@endif
 <div class="d-flex flex-wrap gap-2">
+    @can('update', $summary)
+        <a class="btn btn-outline-secondary" href="{{ route('hr.weekly.edit', $summary) }}">{{ __('ui.edit') }}</a>
+    @endcan
+    @can('delete', $summary)
+        <form method="POST" action="{{ route('hr.weekly.destroy', $summary) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.delete') }}</button></form>
+    @endcan
     @can('verify', $summary)
         <form method="POST" action="{{ route('hr.weekly.verify', $summary) }}">@csrf<button class="btn btn-zpi">{{ __('ui.verify') }}</button></form>
     @endcan

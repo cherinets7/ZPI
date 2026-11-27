@@ -70,7 +70,7 @@
 @endcan
 @forelse($plan->feedbacks as $feedback)
     <div class="border rounded p-3 mb-2">
-        <div class="small text-secondary">{{ $feedback->sender?->name }} · {{ __('ui.'.$feedback->kind) }} · {{ $feedback->created_at->format('Y-m-d H:i') }}</div>
+        <div class="small text-secondary">{{ $feedback->sender?->name }} · {{ __('ui.'.$feedback->kind) }} · {{ $feedback->created_at->format('Y-m-d H:i') }} · <a href="{{ route('feedbacks.show', $feedback) }}">{{ __('ui.view') }}</a></div>
         <p class="mb-1">{{ $feedback->comment }}</p>
         @if($feedback->action_taken)
             <div><strong>{{ __('ui.action_taken') }}:</strong> {{ $feedback->action_taken }}</div>

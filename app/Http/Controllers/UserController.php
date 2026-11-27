@@ -8,6 +8,7 @@ use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -39,6 +40,14 @@ class UserController extends Controller
         $this->audit->log('user.created', $account, [], $account->only(['name', 'email', 'role', 'department_id', 'status']), $account->department_id);
 
         return redirect()->route('admin.users.index')->with('status', __('ui.saved'));
+    }
+
+    public function show(User $user)
+    {
+        $this->authorize('view', $user);
+        $user->load('department');
+
+        return view('admin.users.show', ['account' => $user]);
     }
 
     public function edit(User $user)
@@ -89,7 +98,7 @@ class UserController extends Controller
         ]);
 
         if (in_array($data['role'], config('workflow.department_roles'), true) && empty($data['department_id'])) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'department_id' => __('ui.department_required'),
             ]);
         }

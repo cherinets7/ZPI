@@ -75,7 +75,13 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::post('plans/{plan}/unlock', [PlanReportController::class, 'unlock'])->name('plans.unlock');
     Route::get('plans/{plan}/pdf', [PlanReportController::class, 'pdf'])->name('plans.pdf');
     Route::post('plans/{plan}/feedback', [FeedbackController::class, 'store'])->name('plans.feedback.store');
+    Route::get('feedbacks', [FeedbackController::class, 'index'])->name('feedbacks.index');
+    Route::get('feedbacks/create', [FeedbackController::class, 'create'])->name('feedbacks.create');
+    Route::post('feedbacks', [FeedbackController::class, 'store'])->name('feedbacks.store');
+    Route::get('feedbacks/{feedback}', [FeedbackController::class, 'show'])->name('feedbacks.show');
+    Route::get('feedbacks/{feedback}/edit', [FeedbackController::class, 'edit'])->name('feedbacks.edit');
     Route::put('feedbacks/{feedback}', [FeedbackController::class, 'update'])->name('feedbacks.update');
+    Route::delete('feedbacks/{feedback}', [FeedbackController::class, 'destroy'])->name('feedbacks.destroy');
 
     Route::get('leaves', [LeaveRequestController::class, 'index'])->name('leaves.index');
     Route::get('leaves/create', [LeaveRequestController::class, 'create'])->name('leaves.create');
@@ -98,9 +104,19 @@ Route::middleware(['auth', 'role'])->group(function () {
 
     Route::get('hr/attendance', [AttendanceController::class, 'index'])->name('hr.attendance.index');
     Route::post('hr/attendance', [AttendanceController::class, 'store'])->name('hr.attendance.store');
+    Route::get('hr/attendance/create', [AttendanceController::class, 'create'])->name('hr.attendance.create');
+    Route::post('hr/attendance/entries', [AttendanceController::class, 'storeEntry'])->name('hr.attendance.entries.store');
+    Route::get('hr/attendance/{log}', [AttendanceController::class, 'show'])->name('hr.attendance.show');
+    Route::get('hr/attendance/{log}/edit', [AttendanceController::class, 'edit'])->name('hr.attendance.edit');
+    Route::put('hr/attendance/{log}', [AttendanceController::class, 'update'])->name('hr.attendance.update');
+    Route::delete('hr/attendance/{log}', [AttendanceController::class, 'destroy'])->name('hr.attendance.destroy');
 
     Route::get('hr/weekly', [WeeklySummaryController::class, 'index'])->name('hr.weekly.index');
+    Route::get('hr/weekly/create', [WeeklySummaryController::class, 'create'])->name('hr.weekly.create');
     Route::get('hr/weekly/{summary}', [WeeklySummaryController::class, 'show'])->name('hr.weekly.show');
+    Route::get('hr/weekly/{summary}/edit', [WeeklySummaryController::class, 'edit'])->name('hr.weekly.edit');
+    Route::put('hr/weekly/{summary}', [WeeklySummaryController::class, 'update'])->name('hr.weekly.update');
+    Route::delete('hr/weekly/{summary}', [WeeklySummaryController::class, 'destroy'])->name('hr.weekly.destroy');
     Route::post('hr/weekly/generate', [WeeklySummaryController::class, 'generate'])->name('hr.weekly.generate');
     Route::post('hr/weekly/{summary}/verify', [WeeklySummaryController::class, 'verify'])->name('hr.weekly.verify');
     Route::post('hr/weekly/{summary}/forward', [WeeklySummaryController::class, 'forward'])->name('hr.weekly.forward');
@@ -111,6 +127,9 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::get('payrolls/create', [PayrollController::class, 'create'])->name('payrolls.create');
     Route::post('payrolls', [PayrollController::class, 'store'])->name('payrolls.store');
     Route::get('payrolls/{payroll}', [PayrollController::class, 'show'])->name('payrolls.show');
+    Route::get('payrolls/{payroll}/edit', [PayrollController::class, 'edit'])->name('payrolls.edit');
+    Route::put('payrolls/{payroll}', [PayrollController::class, 'update'])->name('payrolls.update');
+    Route::delete('payrolls/{payroll}', [PayrollController::class, 'destroy'])->name('payrolls.destroy');
     Route::post('payrolls/{payroll}/pay', [PayrollController::class, 'pay'])->name('payrolls.pay');
     Route::get('payrolls/{payroll}/pdf', [PayrollController::class, 'pdf'])->name('payrolls.pdf');
 
@@ -134,6 +153,7 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::get('kpis', [KpiIndicatorController::class, 'index'])->name('kpis.index');
     Route::get('kpis/create', [KpiIndicatorController::class, 'create'])->name('kpis.create');
     Route::post('kpis', [KpiIndicatorController::class, 'store'])->name('kpis.store');
+    Route::get('kpis/{kpi}', [KpiIndicatorController::class, 'show'])->name('kpis.show');
     Route::get('kpis/{kpi}/edit', [KpiIndicatorController::class, 'edit'])->name('kpis.edit');
     Route::put('kpis/{kpi}', [KpiIndicatorController::class, 'update'])->name('kpis.update');
     Route::delete('kpis/{kpi}', [KpiIndicatorController::class, 'destroy'])->name('kpis.destroy');
@@ -142,6 +162,7 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::get('holidays', [HolidayController::class, 'index'])->name('holidays.index');
     Route::get('holidays/create', [HolidayController::class, 'create'])->name('holidays.create');
     Route::post('holidays', [HolidayController::class, 'store'])->name('holidays.store');
+    Route::get('holidays/{holiday}', [HolidayController::class, 'show'])->name('holidays.show');
     Route::get('holidays/{holiday}/edit', [HolidayController::class, 'edit'])->name('holidays.edit');
     Route::put('holidays/{holiday}', [HolidayController::class, 'update'])->name('holidays.update');
     Route::delete('holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
@@ -150,12 +171,19 @@ Route::middleware(['auth', 'role'])->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');
         Route::get('users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('users', [UserController::class, 'store'])->name('users.store');
+        Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
         Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SystemSettingController::class, 'update'])->name('settings.update');
+        Route::get('settings/records/create', [SystemSettingController::class, 'create'])->name('settings.records.create');
+        Route::post('settings/records', [SystemSettingController::class, 'store'])->name('settings.records.store');
+        Route::get('settings/records/{setting}', [SystemSettingController::class, 'show'])->name('settings.records.show');
+        Route::get('settings/records/{setting}/edit', [SystemSettingController::class, 'editRecord'])->name('settings.records.edit');
+        Route::put('settings/records/{setting}', [SystemSettingController::class, 'updateRecord'])->name('settings.records.update');
+        Route::delete('settings/records/{setting}', [SystemSettingController::class, 'destroy'])->name('settings.records.destroy');
 
         Route::get('audit', [AuditLogController::class, 'index'])->name('audit.index');
     });

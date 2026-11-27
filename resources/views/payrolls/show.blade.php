@@ -15,6 +15,12 @@
     <p>{{ __('ui.paid_at') }}: {{ $payroll->paid_at->format('Y-m-d H:i') }} · {{ $payroll->payer?->name }}</p>
 @endif
 <div class="d-flex gap-2">
+    @can('update', $payroll)
+        <a class="btn btn-outline-secondary" href="{{ route('payrolls.edit', $payroll) }}">{{ __('ui.edit') }}</a>
+    @endcan
+    @can('delete', $payroll)
+        <form method="POST" action="{{ route('payrolls.destroy', $payroll) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.delete') }}</button></form>
+    @endcan
     @can('pay', $payroll)
         <form method="POST" action="{{ route('payrolls.pay', $payroll) }}">@csrf<button class="btn btn-zpi">{{ __('ui.pay') }}</button></form>
     @endcan

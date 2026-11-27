@@ -6,6 +6,7 @@ use App\Models\Holiday;
 use App\Services\AuditService;
 use App\Support\EthiopianDateHelper;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class HolidayController extends Controller
@@ -34,6 +35,13 @@ class HolidayController extends Controller
         $this->audit->log('holiday.created', $holiday, [], $holiday->toArray());
 
         return redirect()->route('holidays.index')->with('status', __('ui.saved'));
+    }
+
+    public function show(Holiday $holiday)
+    {
+        $this->authorize('view', $holiday);
+
+        return view('holidays.show', compact('holiday'));
     }
 
     public function edit(Holiday $holiday)
@@ -74,7 +82,7 @@ class HolidayController extends Controller
         try {
             $date = EthiopianDateHelper::toCarbon((int) $data['eth_year'], (int) $data['eth_month'], (int) $data['eth_day']);
         } catch (InvalidArgumentException $exception) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['eth_day' => $exception->getMessage()]);
+            throw ValidationException::withMessages(['eth_day' => $exception->getMessage()]);
         }
 
         $data['gregorian_date'] = $date->toDateString();
