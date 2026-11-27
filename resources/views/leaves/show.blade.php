@@ -11,14 +11,19 @@
         <form method="POST" action="{{ route('leaves.destroy', $leave) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.delete') }}</button></form>
     @endcan
     @can('submit', $leave)
-        <form method="POST" action="{{ route('leaves.submit', $leave) }}">@csrf<button class="btn btn-zpi">{{ __('ui.submit') }}</button></form>
+        <form method="POST" action="{{ route('leaves.submit', $leave) }}">@csrf<button class="btn btn-zpi">{{ $leave->status === 'rejected' ? __('ui.resubmit') : __('ui.submit') }}</button></form>
     @endcan
 </div>
 @can('update', $leave)
     <form id="leave-edit" method="POST" action="{{ route('leaves.update', $leave) }}" class="card card-body mb-3" data-autosave>
         @csrf @method('PUT')
         <p class="small text-secondary" data-autosave-status data-failed="{{ __('ui.autosave_failed') }}" aria-live="polite"></p>
-        <input type="hidden" name="type" value="{{ $leave->type }}">
+        <label class="form-label" for="leave-type">{{ __('ui.type') }}</label>
+        <select class="form-select mb-2" id="leave-type" name="type">
+            @foreach(config('workflow.leave_types') as $type)
+                <option value="{{ $type }}" @selected(old('type', $leave->type) === $type)>{{ $type === 'annual' ? __('ui.leave_annual') : __('ui.'.$type) }}</option>
+            @endforeach
+        </select>
         <div class="row">
             <div class="col-md-6 mb-2"><label class="form-label" for="leave-start">{{ __('ui.start_date') }}</label><input class="form-control" id="leave-start" type="date" name="start_date" value="{{ $leave->start_date->toDateString() }}"></div>
             <div class="col-md-6 mb-2"><label class="form-label" for="leave-end">{{ __('ui.end_date') }}</label><input class="form-control" id="leave-end" type="date" name="end_date" value="{{ $leave->end_date->toDateString() }}"></div>
