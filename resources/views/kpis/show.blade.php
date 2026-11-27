@@ -11,6 +11,6 @@
 </div>
 <p>@include('partials.status', ['status' => $indicator->is_active ? 'active' : 'inactive'])</p>
 @can('delete', $indicator)
-    <form method="POST" action="{{ route('kpis.destroy', $indicator) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ $indicator->is_active ? __('ui.deactivate') : __('ui.active') }}</button></form>
+    <form method="POST" action="{{ route('kpis.destroy', $indicator) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.delete') }}</button></form>
 @endcan
 @endsection

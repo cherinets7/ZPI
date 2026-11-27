@@ -5,12 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\RecordDeletion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class DepartmentController extends Controller
 {
-    public function __construct(private AuditService $audit) {}
+    public function __construct(
+        private AuditService $audit,
+        private RecordDeletion $deletion,
+    ) {}
 
     public function index(Request $request)
     {
@@ -79,10 +84,12 @@ class DepartmentController extends Controller
     public function destroy(Department $department)
     {
         $this->authorize('delete', $department);
-        $department->update(['is_active' => false]);
-        $this->audit->log('department.deactivated', $department, [], ['is_active' => false], $department->id);
+        DB::transaction(function () use ($department) {
+            $this->audit->log('department.deleted', $department, $department->only(['name', 'code']), [], $department->id);
+            $this->deletion->department($department);
+        });
 
-        return redirect()->route('departments.index')->with('status', __('ui.deactivated'));
+        return redirect()->route('departments.index')->with('status', __('ui.deleted'));
     }
 
     public function acting(Request $request, Department $department)

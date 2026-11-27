@@ -14,8 +14,8 @@
 <p>{{ __('ui.base_salary') }}: {{ number_format((float) $account->base_salary, 2) }}</p>
 <p>@include('partials.status', ['status' => $account->status])</p>
 @can('update', $account)
-    @if($account->id !== auth()->id() && $account->status === 'active')
-        <form method="POST" action="{{ route('admin.users.destroy', $account) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.deactivate') }}</button></form>
+    @if($account->id !== auth()->id())
+        <form method="POST" action="{{ route('admin.users.destroy', $account) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.delete') }}</button></form>
     @endif
 @endcan
 @endsection
