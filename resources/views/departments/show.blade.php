@@ -23,7 +23,7 @@
     </form>
 @endcan
 @can('delete', $department)
-    <form method="POST" action="{{ route('departments.destroy', $department) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.deactivate') }}</button></form>
+    <form method="POST" action="{{ route('departments.destroy', $department) }}">@csrf @method('DELETE')<button class="btn btn-outline-danger">{{ __('ui.delete') }}</button></form>
 @endcan
 <h2 class="h5 mt-4">{{ __('ui.employees') }}</h2>
 <ul>@foreach($department->users as $user)<li>{{ $user->name }} — {{ __('ui.role_'.$user->role) }}</li>@endforeach</ul>

@@ -6,14 +6,19 @@ use App\Imports\KpiIndicatorsImport;
 use App\Models\Department;
 use App\Models\KpiIndicator;
 use App\Services\AuditService;
+use App\Services\RecordDeletion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Exceptions\NoTypeDetectedException;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Reader\Exception as SpreadsheetReaderException;
 
 class KpiIndicatorController extends Controller
 {
-    public function __construct(private AuditService $audit) {}
+    public function __construct(
+        private AuditService $audit,
+        private RecordDeletion $deletion,
+    ) {}
 
     public function index(Request $request)
     {
@@ -80,10 +85,12 @@ class KpiIndicatorController extends Controller
     public function destroy(KpiIndicator $kpi)
     {
         $this->authorize('delete', $kpi);
-        $kpi->update(['is_active' => ! $kpi->is_active]);
-        $this->audit->log('kpi.toggled', $kpi, [], ['is_active' => $kpi->is_active], $kpi->department_id);
+        DB::transaction(function () use ($kpi) {
+            $this->audit->log('kpi.deleted', $kpi, $kpi->only(['title', 'department_id']), [], $kpi->department_id);
+            $this->deletion->indicator($kpi);
+        });
 
-        return back()->with('status', __('ui.saved'));
+        return redirect()->route('kpis.index')->with('status', __('ui.deleted'));
     }
 
     public function import(Request $request)

@@ -40,7 +40,7 @@
                 <a href="{{ route('kpis.show', $indicator) }}">{{ __('ui.view') }}</a>
                 @can('update', $indicator)
                     <a href="{{ route('kpis.edit', $indicator) }}">{{ __('ui.edit') }}</a>
-                    <form class="d-inline" method="POST" action="{{ route('kpis.destroy', $indicator) }}">@csrf @method('DELETE')<button class="btn btn-link btn-sm">{{ $indicator->is_active ? __('ui.deactivate') : __('ui.active') }}</button></form>
+                    <form class="d-inline" method="POST" action="{{ route('kpis.destroy', $indicator) }}">@csrf @method('DELETE')<button class="btn btn-link btn-sm">{{ __('ui.delete') }}</button></form>
                 @endcan
             </td>
         </tr>

@@ -5,14 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\RecordDeletion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
-    public function __construct(private AuditService $audit) {}
+    public function __construct(
+        private AuditService $audit,
+        private RecordDeletion $deletion,
+    ) {}
 
     public function index()
     {
@@ -78,10 +83,14 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
         abort_if((int) $user->id === (int) auth()->id(), 422);
-        $user->update(['status' => 'inactive']);
-        $this->audit->log('user.deactivated', $user, [], ['status' => 'inactive'], $user->department_id);
+        $departmentId = $user->department_id;
+        $before = $user->only(['name', 'email', 'role', 'department_id']);
+        DB::transaction(function () use ($user, $before, $departmentId) {
+            $this->audit->log('user.deleted', $user, $before, [], $departmentId);
+            $this->deletion->user($user);
+        });
 
-        return back()->with('status', __('ui.deactivated'));
+        return redirect()->route('admin.users.index')->with('status', __('ui.deleted'));
     }
 
     private function validated(Request $request, ?User $user = null): array

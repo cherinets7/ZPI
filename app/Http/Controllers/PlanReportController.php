@@ -11,10 +11,12 @@ use App\Models\User;
 use App\Notifications\WorkflowNotification;
 use App\Services\AuditService;
 use App\Services\PdfService;
+use App\Services\RecordDeletion;
 use App\Services\RollupService;
 use App\Support\EthiopianDateHelper;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -25,6 +27,7 @@ class PlanReportController extends Controller
         private AuditService $audit,
         private RollupService $rollup,
         private PdfService $pdf,
+        private RecordDeletion $deletion,
     ) {}
 
     public function index(Request $request)
@@ -166,10 +169,12 @@ class PlanReportController extends Controller
     public function destroy(PlanAndReport $plan)
     {
         $this->authorize('delete', $plan);
-        $this->audit->log('plan.deleted', $plan, $plan->toArray(), [], $plan->department_id);
-        $plan->delete();
+        DB::transaction(function () use ($plan) {
+            $this->audit->log('plan.deleted', $plan, $plan->toArray(), [], $plan->department_id);
+            $this->deletion->plan($plan);
+        });
 
-        return redirect()->route('plans.index')->with('status', __('ui.saved'));
+        return redirect()->route('plans.index')->with('status', __('ui.deleted'));
     }
 
     public function submit(PlanAndReport $plan)
