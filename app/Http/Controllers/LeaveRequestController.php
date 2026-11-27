@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Notifications\WorkflowNotification;
+use App\Services\AttendanceService;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -12,7 +13,10 @@ use Illuminate\Validation\Rule;
 
 class LeaveRequestController extends Controller
 {
-    public function __construct(private AuditService $audit) {}
+    public function __construct(
+        private AuditService $audit,
+        private AttendanceService $attendance,
+    ) {}
 
     public function index(Request $request)
     {
@@ -121,6 +125,7 @@ class LeaveRequestController extends Controller
         ]);
         $leave->user?->notify(new WorkflowNotification(__('ui.approved'), $leave->review_note ?? '', route('leaves.show', $leave)));
         $this->audit->log('leave.approved', $leave, [], ['status' => 'approved'], $leave->department_id);
+        $this->refreshAttendance($leave);
 
         return back()->with('status', __('ui.approved'));
     }
@@ -155,5 +160,15 @@ class LeaveRequestController extends Controller
     private function days(string $start, string $end): float
     {
         return Carbon::parse($start)->startOfDay()->diffInDays(Carbon::parse($end)->startOfDay()) + 1;
+    }
+
+    private function refreshAttendance(LeaveRequest $leave): void
+    {
+        $leave->loadMissing('department');
+        if (! $leave->department) {
+            return;
+        }
+
+        $this->attendance->refreshStoredWeeks($leave->department, $leave->start_date, $leave->end_date);
     }
 }

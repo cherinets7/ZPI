@@ -192,6 +192,32 @@ class AttendanceService
     }
 
     /**
+     * Weekly totals are stored when HR generates them. A later leave decision
+     * has to rewrite those rows, including a week that can no longer be generated.
+     */
+    public function refreshStoredWeeks(Department $department, Carbon $start, Carbon $end): void
+    {
+        $cursor = EthiopianDateHelper::mondayOf($start);
+        $last = EthiopianDateHelper::mondayOf($end);
+
+        while ($cursor->lte($last)) {
+            $totals = $this->summarizeDepartmentWeek($department, $cursor->copy());
+            HrWeeklySummary::query()
+                ->where('department_id', $department->id)
+                ->where('eth_year', $totals['eth_year'])
+                ->where('eth_period', $totals['eth_period'])
+                ->update([
+                    'expected_hours' => $totals['expected'],
+                    'worked_hours' => $totals['worked'],
+                    'absent_days' => $totals['absent_days'],
+                    'leave_days' => $totals['leave_days'],
+                    'holiday_days' => $totals['holiday_days'],
+                ]);
+            $cursor->addDays(7);
+        }
+    }
+
+    /**
      * @return array{expected: float, worked: float, absent: int, leave: int, holiday: int, status: string}
      */
     public function classifyDay(User $employee, Carbon $date): array
